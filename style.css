@@ -1,0 +1,152 @@
+/* RESET & FONT */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body, html {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0d1b2a;
+    color: white;
+    min-height: 100vh;
+}
+
+/* HEADER CENTER */
+header {
+    display:flex; 
+    flex-direction:column; 
+    align-items:center; 
+    justify-content:center;
+    background:#b71c1c; 
+    padding:15px; 
+    text-align:center; 
+    box-shadow:0 2px 5px rgba(0,0,0,0.5);
+}
+
+header h1 {
+    font-size:3rem; 
+    font-weight:bold; 
+    color:#ffcc00; 
+    animation: blink 1.5s infinite;
+}
+
+header .info {
+    font-size:1.2rem;  /* lebih besar */
+    font-weight:bold;   /* lebih menonjol */
+    margin-top:5px;
+    color:#ffffff;      /* tetap putih */
+}
+
+
+/* BLINK ANIMATION */
+@keyframes blink {
+    0%, 45%, 100% { opacity: 1; }
+    50%, 95% { opacity: 0; }
+}
+
+
+/* DASHBOARD */
+.dashboard {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* FORM LAPORAN */
+.form-container {
+    background: #1b2a41;
+    padding: 20px;
+    margin: 15px;
+    border-radius: 10px;
+    flex: 1 1 350px;
+    max-width: 400px;
+}
+
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 15px;
+    color: #ffcc00;
+}
+
+.form-container label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ffcc00;
+    font-size: 0.9rem;
+}
+
+/* SEMUA INPUT, SELECT, TEXTAREA, BUTTON */
+.form-container input,
+.form-container select,
+.form-container textarea,
+.form-container button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #333;
+    font-size: 1rem;
+    background: #0d1b2a;
+    color: white;
+}
+
+/* BUTTON */
+button {
+    background: #ffcc00;
+    color: #0d1b2a;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #e6b800;
+}
+
+/* RT & RW sejajar */
+.rt-rw-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.rt-rw-wrapper .field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* MAP */
+#map {
+    flex: 2 1 600px;
+    height: 500px;
+    margin: 15px;
+    border-radius: 10px;
+    border: 2px solid #ffcc00;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px) {
+    .dashboard {
+        flex-direction: column;
+        align-items: center;
+    }
+    .form-container, #map {
+        width: 90%;
+        margin: 10px;
+    }
+}
+.blinking-marker {
+    width: 40px;
+    height: 40px;
+    background-color: red;
+    border: 2px solid white;
+    border-radius: 80%;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0; }
+}
