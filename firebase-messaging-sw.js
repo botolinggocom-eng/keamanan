@@ -1,9 +1,8 @@
-importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js');
+importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js");
 
 firebase.initializeApp({
   apiKey: "AIzaSyAo-nP5XZGK8NqMsjSiHb64--qqUZgB_eM",
-  authDomain: "siagadesa10.firebaseapp.com",
   databaseURL: "https://siagadesa10-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "siagadesa10",
   messagingSenderId: "24091093796",
@@ -11,10 +10,3 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage(function(payload) {
-  self.registration.showNotification(payload.notification.title, {
-    body: payload.notification.body,
-    icon: "/192x192.png"
-  });
-});
