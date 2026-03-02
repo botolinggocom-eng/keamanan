@@ -3,37 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Form Lapor Warga</title>
+<title>Portal Siaga Desa</title>
 
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-body,html{margin:0;padding:0;font-family:'Segoe UI',sans-serif;background:#0d1b2a;color:white}
+body,html{margin:0;padding:0;font-family:Segoe UI;background:#0d1b2a;color:white}
 header{background:#b71c1c;padding:15px;text-align:center}
-header h1{color:#ffcc00}
+header h1{color:#ffcc00;margin:0}
 .form-container{background:#1b2a41;padding:20px;margin:15px auto;border-radius:10px;max-width:400px;width:90%}
-label{color:#ffcc00;font-size:.9rem;display:block;margin-bottom:5px}
-input,select,textarea,button{width:100%;padding:10px;margin-bottom:15px;border-radius:5px;border:none;background:#0d1b2a;color:white}
-button{background:#ffcc00;color:#000;font-weight:bold;cursor:pointer}
-#map{height:400px;width:100%;margin:15px 0;border-radius:10px;border:2px solid #ffcc00}
+input,select,button{width:100%;padding:10px;margin-bottom:15px;border:none;border-radius:5px}
+button{background:#ffcc00;font-weight:bold;cursor:pointer}
+#map{height:400px;margin:15px;border-radius:10px;border:2px solid #ffcc00}
 </style>
 </head>
 <body>
 
 <header>
 <h1>PORTAL LAPOR SIAGA DESA</h1>
-<div>KABUPATEN BONDOWOSO</div>
 </header>
 
 <div class="form-container">
 
 <form id="laporForm">
-<label>Nama</label>
-<input id="nama" required>
+<input id="nama" placeholder="Nama Pelapor" required>
 
-<label>Kondisi</label>
 <select id="kondisi" required>
-<option value="">-- Pilih --</option>
+<option value="">-- Pilih Kondisi --</option>
 <option>Banjir</option>
 <option>Kebakaran</option>
 <option>Kecelakaan</option>
@@ -45,7 +42,7 @@ button{background:#ffcc00;color:#000;font-weight:bold;cursor:pointer}
 <button type="submit">Kirim Laporan</button>
 </form>
 
-<button id="aktifkanSuaraBtn">🔔 Aktifkan Notifikasi & Suara</button>
+<button id="aktifkanBtn">🔔 Aktifkan Notifikasi</button>
 
 </div>
 
@@ -71,32 +68,26 @@ const db = firebase.database();
 const messaging = firebase.messaging();
 
 // ================= MAP =================
-const map=L.map('map').setView([-7.9666,113.8021],14);
+const map = L.map('map').setView([-7.9666,113.8021],14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// ================= AUDIO =================
-const audio=new Audio("banjir.mp3");
-let suaraAktif=false;
+// ================= AKTIFKAN NOTIFIKASI =================
+document.getElementById("aktifkanBtn")
+.addEventListener("click", function(){
 
-// ================= TOMBOL AKTIFKAN =================
-document.getElementById("aktifkanSuaraBtn").onclick = function(){
-
-  suaraAktif=true;
-  this.disabled=true;
-  this.innerText="✅ Notifikasi Aktif";
-
+  // WAJIB BARIS PERTAMA
   Notification.requestPermission().then(function(permission){
 
     console.log("STATUS IZIN:", permission);
 
-    if(permission==="granted"){
+    if(permission === "granted"){
 
       navigator.serviceWorker.register("firebase-messaging-sw.js")
       .then(function(registration){
 
         return messaging.getToken({
           vapidKey:"BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog",
-          serviceWorkerRegistration:registration
+          serviceWorkerRegistration: registration
         });
 
       })
@@ -107,9 +98,11 @@ document.getElementById("aktifkanSuaraBtn").onclick = function(){
           console.log("TOKEN MASUK:", token);
 
           db.ref("tokens/"+token).set({
-            token:token,
-            createdAt:Date.now()
+            token: token,
+            createdAt: Date.now()
           });
+
+          alert("Notifikasi berhasil diaktifkan");
 
         }else{
           console.log("TOKEN TIDAK ADA");
@@ -117,17 +110,19 @@ document.getElementById("aktifkanSuaraBtn").onclick = function(){
 
       })
       .catch(function(err){
-        console.log("ERROR FCM:",err);
+        console.log("ERROR FCM:", err);
       });
 
+    } else {
+      alert("Izin notifikasi ditolak");
     }
 
   });
 
-};
+});
 
-// ================= SUBMIT LAPORAN =================
-laporForm.onsubmit=function(e){
+// ================= KIRIM LAPORAN =================
+laporForm.onsubmit = function(e){
 e.preventDefault();
 
 navigator.geolocation.getCurrentPosition(function(pos){
@@ -142,12 +137,7 @@ timestamp:Date.now()
 
 L.marker([pos.coords.latitude,pos.coords.longitude]).addTo(map);
 
-if(suaraAktif){
-audio.play();
-}
-
-alert("Laporan terkirim");
-
+alert("Laporan berhasil dikirim");
 laporForm.reset();
 
 });
