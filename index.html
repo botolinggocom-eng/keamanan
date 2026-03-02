@@ -107,13 +107,12 @@ const db=firebase.database();
 if ('serviceWorker' in navigator) {
 
   navigator.serviceWorker.register('firebase-messaging-sw.js')
-  .then(function(registration) {
+.then(function(registration) {
 
-    const messaging = firebase.messaging();
-    messaging.useServiceWorker(registration);
+  const messaging = firebase.messaging(); // cukup ini saja
 
-    return Notification.requestPermission();
-  })
+  return Notification.requestPermission();
+})
   .then(function(permission) {
 
     if (permission === 'granted') {
