@@ -105,51 +105,60 @@ firebase.initializeApp({
 });
 const db = firebase.database();
 
-if ('serviceWorker' in navigator) {
+const messaging = firebase.messaging();
 
-  navigator.serviceWorker.register('firebase-messaging-sw.js')
-  .then(function(registration) {
+aktifkanSuaraBtn.onclick = function() {
 
-    console.log("SW BERHASIL REGISTER");
+  // aktifkan suara seperti sebelumnya
+  Object.values(audioMap).forEach(a=>{
+    a.play().then(()=>a.pause()).catch(()=>{});
+  });
 
-    return Notification.requestPermission();
-  })
-  .then(function(permission) {
+  suaraAktif = true;
+  aktifkanSuaraBtn.disabled = true;
+  aktifkanSuaraBtn.innerText = "🔊 Suara Aktif";
+
+  // MINTA IZIN NOTIFIKASI DI SINI
+  Notification.requestPermission().then(function(permission) {
 
     console.log("STATUS IZIN:", permission);
 
-    if (permission === 'granted') {
+    if (permission === "granted") {
 
-      return firebase.messaging().getToken({
-        vapidKey: "BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog"
+      navigator.serviceWorker.register('firebase-messaging-sw.js')
+      .then(function(registration) {
+
+        return messaging.getToken({
+          vapidKey: "BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog",
+          serviceWorkerRegistration: registration
+        });
+
+      })
+      .then(function(token) {
+
+        if (token) {
+
+          console.log("TOKEN MASUK:", token);
+
+          db.ref("tokens/" + token).set({
+            token: token,
+            createdAt: Date.now()
+          });
+
+        } else {
+          console.log("TOKEN TIDAK ADA");
+        }
+
+      })
+      .catch(function(err) {
+        console.log("ERROR FCM:", err);
       });
 
-    } else {
-      console.log("IZIN DITOLAK");
     }
 
-  })
-  .then(function(token) {
-
-    if (token) {
-
-      console.log("TOKEN MASUK:", token);
-
-      db.ref("tokens/" + token).set({
-        token: token,
-        createdAt: Date.now()
-      });
-
-    } else {
-      console.log("TOKEN TIDAK ADA");
-    }
-
-  })
-  .catch(function(err) {
-    console.log("ERROR FCM:", err);
   });
 
-}
+};
 // MAP
 const map=L.map('map').setView([-7.9666,113.8021],14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
