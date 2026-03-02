@@ -54,6 +54,7 @@ button{background:#ffcc00;font-weight:bold;cursor:pointer}
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
 <script>
+
 // ================= FIREBASE =================
 firebase.initializeApp({
   apiKey:"AIzaSyAo-nP5XZGK8NqMsjSiHb64--qqUZgB_eM",
@@ -75,7 +76,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 document.getElementById("aktifkanBtn")
 .addEventListener("click", function(){
 
-  // WAJIB BARIS PERTAMA
+  console.log("TOMBOL DIKLIK");
+
   Notification.requestPermission().then(function(permission){
 
     console.log("STATUS IZIN:", permission);
@@ -97,14 +99,14 @@ document.getElementById("aktifkanBtn")
 
           console.log("TOKEN MASUK:", token);
 
-          db.ref("tokens/"+token).set({
+          db.ref("tokens/" + token).set({
             token: token,
             createdAt: Date.now()
           });
 
           alert("Notifikasi berhasil diaktifkan");
 
-        }else{
+        } else {
           console.log("TOKEN TIDAK ADA");
         }
 
@@ -143,6 +145,7 @@ laporForm.reset();
 });
 
 };
+
 </script>
 
 </body>
