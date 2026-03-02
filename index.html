@@ -4,66 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Form Lapor Warga</title>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-*, *::before, *::after{box-sizing:border-box}
 body,html{margin:0;padding:0;font-family:'Segoe UI',sans-serif;background:#0d1b2a;color:white}
-
 header{background:#b71c1c;padding:15px;text-align:center}
-header h1{color:#ffcc00;animation:blink 1.5s infinite}
-header .info{font-weight:bold;color:#ffffff;margin-top:5px}
-@keyframes blink{0%,50%,100%{opacity:1}25%,75%{opacity:0}}
-
+header h1{color:#ffcc00}
 .form-container{background:#1b2a41;padding:20px;margin:15px auto;border-radius:10px;max-width:400px;width:90%}
-.form-container h2{text-align:center;color:#ffcc00;margin-bottom:20px}
-
 label{color:#ffcc00;font-size:.9rem;display:block;margin-bottom:5px}
-input,select,textarea,button{width:100%;padding:10px;margin-bottom:15px;border-radius:5px;border:none;background:#0d1b2a;color:white;font-size:1rem}
-textarea{resize:vertical}
+input,select,textarea,button{width:100%;padding:10px;margin-bottom:15px;border-radius:5px;border:none;background:#0d1b2a;color:white}
 button{background:#ffcc00;color:#000;font-weight:bold;cursor:pointer}
-button:hover{background:#e6b800}
-
-.rt-rw-wrapper{display:flex;gap:10px}
-.rt-rw-wrapper>div{flex:1;display:flex;flex-direction:column}
-
 #map{height:400px;width:100%;margin:15px 0;border-radius:10px;border:2px solid #ffcc00}
-#statusLaporan{text-align:center;font-weight:bold;color:#00ff00}
-
-.blink-marker{width:30px;height:30px;border-radius:50%;border:3px solid white;text-align:center;line-height:30px;font-weight:bold;animation:blink 1s infinite}
-.blink-banjir{background:#007bff;color:white}
-.blink-kebakaran{background:#ff0000;color:white}
-.blink-kecelakaan{background:#ff8000;color:white}
-.blink-pencurian{background:#ffff00;color:black}
-.blink-longsor{background:#800080;color:white}
-.blink-lainnya{background:#00ff00;color:black}
-
-#video{width:100%;display:none;border-radius:5px}
 </style>
 </head>
 <body>
 
 <header>
 <h1>PORTAL LAPOR SIAGA DESA</h1>
-<div class="info">KABUPATEN BONDOWOSO - KECAMATAN</div>
+<div>KABUPATEN BONDOWOSO</div>
 </header>
 
 <div class="form-container">
-<h2>LAPOR KONDISI DARURAT</h2>
+
 <form id="laporForm">
-<label>Nama Pelapor</label>
+<label>Nama</label>
 <input id="nama" required>
-
-<div class="rt-rw-wrapper">
-<div><label>RT</label><input id="rt" required></div>
-<div><label>RW</label><input id="rw" required></div>
-</div>
-
-<label>Dusun</label>
-<input id="dusun" required>
-
-<label>Desa</label>
-<input id="desa" required>
 
 <label>Kondisi</label>
 <select id="kondisi" required>
@@ -76,14 +42,11 @@ button:hover{background:#e6b800}
 <option>Lainnya</option>
 </select>
 
-<label>Keterangan</label>
-<textarea id="keterangan"></textarea>
-
 <button type="submit">Kirim Laporan</button>
 </form>
 
-<button id="aktifkanSuaraBtn" style="width:100%;padding:10px;margin-top:10px;">🔊 Aktifkan Suara</button>
-<div id="statusLaporan"></div>
+<button id="aktifkanSuaraBtn">🔔 Aktifkan Notifikasi & Suara</button>
+
 </div>
 
 <div id="map"></div>
@@ -94,64 +57,67 @@ button:hover{background:#e6b800}
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
 <script>
+// ================= FIREBASE =================
 firebase.initializeApp({
   apiKey:"AIzaSyAo-nP5XZGK8NqMsjSiHb64--qqUZgB_eM",
-  authDomain: "siagadesa10.firebaseapp.com",
+  authDomain:"siagadesa10.firebaseapp.com",
   databaseURL:"https://siagadesa10-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId:"siagadesa10",
-  storageBucket:"siagadesa10.appspot.com",
   messagingSenderId:"24091093796",
   appId:"1:24091093796:web:6773efecd9f7a6f4e0a1b1"
 });
-const db = firebase.database();
 
+const db = firebase.database();
 const messaging = firebase.messaging();
 
-aktifkanSuaraBtn.onclick = function() {
+// ================= MAP =================
+const map=L.map('map').setView([-7.9666,113.8021],14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-  // aktifkan suara seperti sebelumnya
-  Object.values(audioMap).forEach(a=>{
-    a.play().then(()=>a.pause()).catch(()=>{});
-  });
+// ================= AUDIO =================
+const audio=new Audio("banjir.mp3");
+let suaraAktif=false;
 
-  suaraAktif = true;
-  aktifkanSuaraBtn.disabled = true;
-  aktifkanSuaraBtn.innerText = "🔊 Suara Aktif";
+// ================= TOMBOL AKTIFKAN =================
+document.getElementById("aktifkanSuaraBtn").onclick = function(){
 
-  // MINTA IZIN NOTIFIKASI DI SINI
-  Notification.requestPermission().then(function(permission) {
+  suaraAktif=true;
+  this.disabled=true;
+  this.innerText="✅ Notifikasi Aktif";
+
+  Notification.requestPermission().then(function(permission){
 
     console.log("STATUS IZIN:", permission);
 
-    if (permission === "granted") {
+    if(permission==="granted"){
 
-      navigator.serviceWorker.register('firebase-messaging-sw.js')
-      .then(function(registration) {
+      navigator.serviceWorker.register("firebase-messaging-sw.js")
+      .then(function(registration){
 
         return messaging.getToken({
-          vapidKey: "BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog",
-          serviceWorkerRegistration: registration
+          vapidKey:"BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog",
+          serviceWorkerRegistration:registration
         });
 
       })
-      .then(function(token) {
+      .then(function(token){
 
-        if (token) {
+        if(token){
 
           console.log("TOKEN MASUK:", token);
 
-          db.ref("tokens/" + token).set({
-            token: token,
-            createdAt: Date.now()
+          db.ref("tokens/"+token).set({
+            token:token,
+            createdAt:Date.now()
           });
 
-        } else {
+        }else{
           console.log("TOKEN TIDAK ADA");
         }
 
       })
-      .catch(function(err) {
-        console.log("ERROR FCM:", err);
+      .catch(function(err){
+        console.log("ERROR FCM:",err);
       });
 
     }
@@ -159,111 +125,35 @@ aktifkanSuaraBtn.onclick = function() {
   });
 
 };
-// MAP
-const map=L.map('map').setView([-7.9666,113.8021],14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-const kondisiClass={
-Banjir:'blink-banjir',
-Kebakaran:'blink-kebakaran',
-Kecelakaan:'blink-kecelakaan',
-Pencurian:'blink-pencurian',
-Longsor:'blink-longsor',
-Lainnya:'blink-lainnya'
-};
-
-// AUDIO
-const audioMap={
-Banjir:new Audio("banjir.mp3"),
-Kebakaran:new Audio("kebakaran.mp3"),
-Kecelakaan:new Audio("kecelakaan.mp3"),
-Pencurian:new Audio("pencurian.mp3"),
-Longsor:new Audio("longsor.mp3"),
-Lainnya:new Audio("lainnya.mp3")
-};
-
-let suaraAktif=false;
-
-aktifkanSuaraBtn.onclick=()=>{
-Object.values(audioMap).forEach(a=>{
-a.play().then(()=>a.pause()).catch(()=>{});
-});
-suaraAktif=true;
-aktifkanSuaraBtn.disabled=true;
-aktifkanSuaraBtn.innerText="🔊 Suara Aktif";
-};
-
-function bunyikanAlarm(k){
-if(!suaraAktif) return;
-
-Object.values(audioMap).forEach(a=>{
-a.pause();
-a.currentTime=0;
-});
-
-if(!audioMap[k]) return;
-
-audioMap[k].loop=true;
-audioMap[k].play();
-
-setTimeout(()=>{
-audioMap[k].pause();
-audioMap[k].currentTime=0;
-},60000);
-}
-
-// MARKER REALTIME
-let lastMarker=null;
-
-db.ref('laporan').orderByChild('timestamp').limitToLast(1).on('child_added',snap=>{
-const l=snap.val();
-if(!l.lat||!l.lon)return;
-
-if(lastMarker) map.removeLayer(lastMarker);
-
-lastMarker=L.marker([l.lat,l.lon],{
-icon:L.divIcon({
-className:'blink-marker '+kondisiClass[l.kondisi],
-html:l.kondisi[0]
-})
-}).addTo(map);
-
-lastMarker.bindPopup(`
-<b>Kondisi:</b> ${l.kondisi}<br>
-<b>Nama:</b> ${l.nama}<br>
-<b>RT/RW:</b> ${l.rt}/${l.rw}<br>
-<b>Dusun:</b> ${l.dusun}<br>
-<b>Desa:</b> ${l.desa}<br>
-<b>Keterangan:</b> ${l.keterangan||'-'}<br>
-<b>Status:</b> ${l.status||'Belum Diproses'}
-`).openPopup();
-
-map.setView([l.lat,l.lon],14);
-
-bunyikanAlarm(l.kondisi);
-});
-
-// SUBMIT
-laporForm.onsubmit=e=>{
+// ================= SUBMIT LAPORAN =================
+laporForm.onsubmit=function(e){
 e.preventDefault();
-navigator.geolocation.getCurrentPosition(pos=>{
-db.ref('laporan').push({
+
+navigator.geolocation.getCurrentPosition(function(pos){
+
+db.ref("laporan").push({
 nama:nama.value,
-rt:rt.value,
-rw:rw.value,
-dusun:dusun.value,
-desa:desa.value,
 kondisi:kondisi.value,
-keterangan:keterangan.value,
 lat:pos.coords.latitude,
 lon:pos.coords.longitude,
-status:"Belum Diproses",
 timestamp:Date.now()
 });
-statusLaporan.innerText="Laporan berhasil dikirim";
+
+L.marker([pos.coords.latitude,pos.coords.longitude]).addTo(map);
+
+if(suaraAktif){
+audio.play();
+}
+
+alert("Laporan terkirim");
+
 laporForm.reset();
+
 });
+
 };
 </script>
+
 </body>
 </html>
