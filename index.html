@@ -1,23 +1,192 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>TEST</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Siaga Desa</title>
+
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+body,html{
+  margin:0;
+  padding:0;
+  font-family:Segoe UI;
+  background:#0d1b2a;
+  color:white;
+}
+header{
+  background:#b71c1c;
+  padding:15px;
+  text-align:center;
+}
+header h1{
+  color:#ffcc00;
+  margin:0;
+}
+.container{
+  background:#1b2a41;
+  padding:20px;
+  margin:20px auto;
+  border-radius:10px;
+  max-width:400px;
+  width:90%;
+}
+input,select,button{
+  width:100%;
+  padding:10px;
+  margin-bottom:15px;
+  border:none;
+  border-radius:5px;
+}
+button{
+  background:#ffcc00;
+  font-weight:bold;
+  cursor:pointer;
+}
+#map{
+  height:400px;
+  margin:20px;
+  border-radius:10px;
+  border:2px solid #ffcc00;
+}
+</style>
 </head>
 <body>
 
-<h1>TEST JS</h1>
+<header>
+<h1>PORTAL LAPOR SIAGA DESA</h1>
+</header>
 
-<button id="btn">Klik Saya</button>
+<div class="container">
+
+<form id="laporForm">
+<input id="nama" placeholder="Nama Pelapor" required>
+
+<select id="kondisi" required>
+<option value="">-- Pilih Kondisi --</option>
+<option>Banjir</option>
+<option>Kebakaran</option>
+<option>Kecelakaan</option>
+<option>Pencurian</option>
+<option>Longsor</option>
+<option>Lainnya</option>
+</select>
+
+<button type="submit">Kirim Laporan</button>
+</form>
+
+<button id="aktifkanBtn">🔔 Aktifkan Notifikasi</button>
+
+</div>
+
+<div id="map"></div>
+
+<!-- LIBRARY -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
 <script>
-console.log("JS BERHASIL LOAD");
-alert("JS BERHASIL LOAD");
 
-document.getElementById("btn").addEventListener("click", function(){
-  console.log("TOMBOL DIKLIK");
-  alert("TOMBOL DIKLIK");
+console.log("JS BERHASIL LOAD");
+
+// ================= FIREBASE =================
+firebase.initializeApp({
+  apiKey:"AIzaSyAo-nP5XZGK8NqMsjSiHb64--qqUZgB_eM",
+  authDomain:"siagadesa10.firebaseapp.com",
+  databaseURL:"https://siagadesa10-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"siagadesa10",
+  messagingSenderId:"24091093796",
+  appId:"1:24091093796:web:6773efecd9f7a6f4e0a1b1"
 });
+
+const db = firebase.database();
+const messaging = firebase.messaging();
+
+// ================= MAP =================
+const map = L.map('map').setView([-7.9666,113.8021],14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+.addTo(map);
+
+// ================= NOTIFIKASI =================
+document.getElementById("aktifkanBtn")
+.addEventListener("click", function(){
+
+  console.log("TOMBOL DIKLIK");
+
+  Notification.requestPermission()
+  .then(function(permission){
+
+    console.log("STATUS IZIN:", permission);
+
+    if(permission === "granted"){
+
+      navigator.serviceWorker.register("firebase-messaging-sw.js")
+      .then(function(registration){
+
+        return messaging.getToken({
+          vapidKey:"BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog",
+          serviceWorkerRegistration: registration
+        });
+
+      })
+      .then(function(token){
+
+        if(token){
+          console.log("TOKEN MASUK:", token);
+
+          db.ref("tokens/"+token).set({
+            token:token,
+            createdAt:Date.now()
+          });
+
+          alert("Notifikasi Aktif ✅");
+        }else{
+          console.log("TOKEN TIDAK ADA");
+        }
+
+      })
+      .catch(function(err){
+        console.log("ERROR FCM:", err);
+      });
+
+    }else{
+      alert("Izin ditolak");
+    }
+
+  });
+
+});
+
+// ================= KIRIM LAPORAN =================
+document.getElementById("laporForm")
+.addEventListener("submit", function(e){
+
+  e.preventDefault();
+
+  navigator.geolocation.getCurrentPosition(function(pos){
+
+    db.ref("laporan").push({
+      nama:nama.value,
+      kondisi:kondisi.value,
+      lat:pos.coords.latitude,
+      lon:pos.coords.longitude,
+      timestamp:Date.now()
+    });
+
+    L.marker([pos.coords.latitude,pos.coords.longitude])
+    .addTo(map);
+
+    alert("Laporan Terkirim");
+    laporForm.reset();
+
+  });
+
+});
+
 </script>
 
 </body>
