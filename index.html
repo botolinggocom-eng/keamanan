@@ -91,13 +91,18 @@ button:hover{background:#e6b800}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyAo-nP5XZGK8NqMsjSiHb64--qqUZgB_eM",
-  databaseURL:"https://siagadesa10-default-rtdb.asia-southeast1.firebasedatabase.app"
+  authDomain: "siagadesa10.firebaseapp.com",
+  databaseURL:"https://siagadesa10-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"siagadesa10",
+  storageBucket:"siagadesa10.appspot.com",
+  messagingSenderId:"24091093796",
+  appId:"1:24091093796:web:6773efecd9f7a6f4e0a1b1"
 });
-
 const db=firebase.database();
 if ('serviceWorker' in navigator) {
 
