@@ -99,7 +99,46 @@ firebase.initializeApp({
 });
 
 const db=firebase.database();
+if ('serviceWorker' in navigator) {
 
+  navigator.serviceWorker.register('firebase-messaging-sw.js')
+  .then(function(registration) {
+
+    const messaging = firebase.messaging();
+    messaging.useServiceWorker(registration);
+
+    return Notification.requestPermission();
+  })
+  .then(function(permission) {
+
+    if (permission === 'granted') {
+
+      return firebase.messaging().getToken({
+        vapidKey: "BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog"
+      });
+
+    }
+
+  })
+  .then(function(token) {
+
+    if (token) {
+
+      db.ref("tokens/" + token).set({
+        token: token,
+        createdAt: Date.now()
+      });
+
+      console.log("TOKEN MASUK:", token);
+
+    }
+
+  })
+  .catch(function(err) {
+    console.log("ERROR FCM:", err);
+  });
+
+}
 // MAP
 const map=L.map('map').setView([-7.9666,113.8021],14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
