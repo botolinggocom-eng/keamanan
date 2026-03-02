@@ -103,17 +103,20 @@ firebase.initializeApp({
   messagingSenderId:"24091093796",
   appId:"1:24091093796:web:6773efecd9f7a6f4e0a1b1"
 });
-const db=firebase.database();
+const db = firebase.database();
+
 if ('serviceWorker' in navigator) {
 
   navigator.serviceWorker.register('firebase-messaging-sw.js')
-.then(function(registration) {
+  .then(function(registration) {
 
-  const messaging = firebase.messaging(); // cukup ini saja
+    console.log("SW BERHASIL REGISTER");
 
-  return Notification.requestPermission();
-})
+    return Notification.requestPermission();
+  })
   .then(function(permission) {
+
+    console.log("STATUS IZIN:", permission);
 
     if (permission === 'granted') {
 
@@ -121,6 +124,8 @@ if ('serviceWorker' in navigator) {
         vapidKey: "BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog"
       });
 
+    } else {
+      console.log("IZIN DITOLAK");
     }
 
   })
@@ -128,13 +133,15 @@ if ('serviceWorker' in navigator) {
 
     if (token) {
 
+      console.log("TOKEN MASUK:", token);
+
       db.ref("tokens/" + token).set({
         token: token,
         createdAt: Date.now()
       });
 
-      console.log("TOKEN MASUK:", token);
-
+    } else {
+      console.log("TOKEN TIDAK ADA");
     }
 
   })
