@@ -51,6 +51,18 @@ button{
   border-radius:10px;
   border:2px solid #ffcc00;
 }
+.blink-marker{
+  width:25px;
+  height:25px;
+  border-radius:50%;
+  background:red;
+  animation:blink 1s infinite;
+}
+@keyframes blink{
+  0%{opacity:1;}
+  50%{opacity:0;}
+  100%{opacity:1;}
+}
 </style>
 </head>
 <body>
@@ -77,21 +89,18 @@ button{
 <button type="submit">Kirim Laporan</button>
 </form>
 
-<button id="aktifkanBtn">🔔 Aktifkan Notifikasi</button>
+<button id="aktifkanBtn">🔔 Aktifkan Notifikasi & Alarm</button>
 
 </div>
 
 <div id="map"></div>
 
-<!-- LIBRARY -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
 <script>
-
-console.log("JS BERHASIL LOAD");
 
 // ================= FIREBASE =================
 firebase.initializeApp({
@@ -108,53 +117,77 @@ const messaging = firebase.messaging();
 
 // ================= MAP =================
 const map = L.map('map').setView([-7.9666,113.8021],14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-.addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// ================= NOTIFIKASI =================
+let lastMarker = null;
+
+// ================= AUDIO =================
+const audioMap = {
+  Banjir: new Audio("banjir.mp3"),
+  Kebakaran: new Audio("kebakaran.mp3"),
+  Kecelakaan: new Audio("kecelakaan.mp3"),
+  Pencurian: new Audio("pencurian.mp3"),
+  Longsor: new Audio("longsor.mp3"),
+  Lainnya: new Audio("lainnya.mp3")
+};
+
+let suaraAktif = false;
+
+function bunyikanAlarm(kondisi){
+
+  if(!suaraAktif) return;
+  if(!audioMap[kondisi]) return;
+
+  Object.values(audioMap).forEach(a=>{
+    a.pause();
+    a.currentTime=0;
+  });
+
+  audioMap[kondisi].loop=true;
+  audioMap[kondisi].play();
+
+  setTimeout(()=>{
+    audioMap[kondisi].pause();
+    audioMap[kondisi].currentTime=0;
+  },30000);
+}
+
+// ================= AKTIFKAN NOTIF =================
 document.getElementById("aktifkanBtn")
 .addEventListener("click", function(){
 
-  console.log("TOMBOL DIKLIK");
+  Object.values(audioMap).forEach(a=>{
+    a.play().then(()=>a.pause()).catch(()=>{});
+  });
+
+  suaraAktif=true;
 
   Notification.requestPermission()
-  .then(function(permission){
+  .then(permission=>{
 
-    console.log("STATUS IZIN:", permission);
-
-    if(permission === "granted"){
+    if(permission==="granted"){
 
       navigator.serviceWorker.register("firebase-messaging-sw.js")
-      .then(function(registration){
+      .then(reg=>{
 
         return messaging.getToken({
           vapidKey:"BAowwfotejVH-EafLmZ9lzYhyoQUWmuQV0kmhmlrznDpsU11UvieHdl7s-PUrsY24rnD0A83gaR5q8l94-RBuog",
-          serviceWorkerRegistration: registration
+          serviceWorkerRegistration:reg
         });
 
       })
-      .then(function(token){
+      .then(token=>{
 
         if(token){
-          console.log("TOKEN MASUK:", token);
-
           db.ref("tokens/"+token).set({
             token:token,
             createdAt:Date.now()
           });
-
-          alert("Notifikasi Aktif ✅");
-        }else{
-          console.log("TOKEN TIDAK ADA");
+          alert("Notifikasi & Alarm Aktif ✅");
         }
 
-      })
-      .catch(function(err){
-        console.log("ERROR FCM:", err);
       });
 
-    }else{
-      alert("Izin ditolak");
     }
 
   });
@@ -177,13 +210,47 @@ document.getElementById("laporForm")
       timestamp:Date.now()
     });
 
-    L.marker([pos.coords.latitude,pos.coords.longitude])
-    .addTo(map);
-
     alert("Laporan Terkirim");
     laporForm.reset();
 
   });
+
+});
+
+// ================= REALTIME LISTENER =================
+db.ref("laporan").limitToLast(1).on("child_added", function(snapshot){
+
+  const data=snapshot.val();
+  if(!data) return;
+
+  const kondisi=data.kondisi;
+  const nama=data.nama;
+
+  if(lastMarker) map.removeLayer(lastMarker);
+
+  lastMarker=L.marker([data.lat,data.lon],{
+    icon:L.divIcon({className:"blink-marker"})
+  }).addTo(map)
+  .bindPopup("🚨 "+kondisi+"<br>Pelapor: "+nama)
+  .openPopup();
+
+  map.setView([data.lat,data.lon],14);
+
+  if(Notification.permission==="granted"){
+
+    navigator.serviceWorker.getRegistration()
+    .then(reg=>{
+      if(reg){
+        reg.showNotification("🚨 Laporan Darurat Baru",{
+          body:kondisi+" dilaporkan oleh "+nama,
+          icon:"https://cdn-icons-png.flaticon.com/512/565/565547.png"
+        });
+      }
+    });
+
+  }
+
+  bunyikanAlarm(kondisi);
 
 });
 
